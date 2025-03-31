@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global styles for our dark theme */
+body {
+  @apply bg-neo-bg text-neo-text;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Custom scrollbar for the theme */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-neo-bg;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-neo-border rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-neo-accent/50;
+}
+
+/* Map styles - ensure readability with our theme */
+.leaflet-container {
+  @apply rounded-neo overflow-hidden;
+  font-family: 'Inter', sans-serif;
+}
+
+.leaflet-control {
+  @apply shadow-neo !important;
+}
+
+.leaflet-popup-content-wrapper {
+  @apply bg-neo-card text-neo-text rounded-lg shadow-neo !important;
+}
+
+.leaflet-popup-tip {
+  @apply bg-neo-card !important;
+}
+
+/* Mapillary viewer styles */
+.mapillary-js-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseAccent {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 0.5; }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-pulse-accent {
+  animation: pulseAccent 2s ease-in-out infinite;
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  @apply outline-none ring-2 ring-neo-accent ring-opacity-70;
+}
+
+/* Button styles */
+button, 
+input[type="button"],
+input[type="submit"] {
+  @apply transition-all duration-200;
+}
+
+/* Placeholder text color */
+::placeholder {
+  @apply text-neo-muted/60;
+}
+
+.map-tiles-english {
+  filter: 
+    /* Change text to black */
+    grayscale(100%)
+    brightness(40%)
+    contrast(200%);
+}
+
+/* Ensure modals always appear on top */
+.modal-overlay {
+  z-index: 9999 !important;
+}
+
+/* Fix for any potential stacking context issues */
+#root {
+  isolation: isolate;
+}
