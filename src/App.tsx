@@ -111,7 +111,7 @@ function App() {
           <div className="bg-neo-accent/10 p-4 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
             <MapPin className="w-12 h-12 text-neo-accent" />
           </div>
-          <h1 className="text-4xl font-bold mb-2 text-neo-text">Neoguesser</h1>
+          <h1 className="text-4xl font-bold mb-2 text-neo-text">LocationLock</h1>
           <br></br>
           <h6 className="text-neo-muted mb-8">Created by Evan Juszczak</h6>
           <p className="text-neo-muted mb-8">Test your map knowledge, ad free.</p>
@@ -151,7 +151,7 @@ function App() {
             {/* Left: Title */}
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-neo-text flex items-center">
-                <MapPin className="w-6 h-6 mr-2 text-neo-accent" /> Neoguesser
+                <MapPin className="w-6 h-6 mr-2 text-neo-accent" /> LocationLock
               </h1>
             </div>
             
