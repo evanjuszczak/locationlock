@@ -4,6 +4,26 @@ import App from './App.tsx';
 import './index.css';
 import { AuthProvider } from './contexts/AuthContext';
 
+// Global error handling for fetch operations and SSL issues
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+  try {
+    const response = await originalFetch(...args);
+    return response;
+  } catch (err) {
+    // Log network errors but don't crash the app
+    if (err instanceof Error) {
+      // Handle SSL errors specifically
+      if (err.message.includes('SSL') || err.message.includes('certificate') || err.message.includes('ERR_SSL_PROTOCOL_ERROR')) {
+        console.warn('SSL Connection Error:', err.message, 'URL:', args[0]);
+      } else {
+        console.warn('Network Error:', err.message, 'URL:', args[0]);
+      }
+    }
+    throw err; // Still throw so components can handle it
+  }
+};
+
 // Filter out noisy Mapillary console errors in development environment
 if (import.meta.env.DEV) {
   const originalConsoleError = console.error;
@@ -22,6 +42,21 @@ if (import.meta.env.DEV) {
     originalConsoleError.apply(console, args);
   };
 }
+
+// Add unhandled rejection handler to prevent app crashes
+window.addEventListener('unhandledrejection', event => {
+  if (event.reason instanceof Error) {
+    // Prevent SSL errors from crashing the app
+    if (
+      event.reason.message.includes('SSL') || 
+      event.reason.message.includes('certificate') || 
+      event.reason.message.includes('security')
+    ) {
+      console.warn('Unhandled SSL Error:', event.reason);
+      event.preventDefault();
+    }
+  }
+});
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -16,7 +16,7 @@ import { incrementGamesPlayed } from './api/userStats';
 
 function App() {
   const gameState = useGameStore();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
@@ -47,7 +47,7 @@ function App() {
     }
   }, [user, previousUserId, gameState]);
 
-  // Track when a game is finished and increment games played
+  // Track when a game is finished and increment games played (only for logged in users)
   useEffect(() => {
     const trackGamePlayed = async () => {
       // Only track if game just finished, user is logged in, and we haven't tracked this game yet
@@ -100,6 +100,18 @@ function App() {
     setLeaderboardKey(prev => prev + 1);
     setIsLeaderboardOpen(true);
   }, []);
+
+  // Handle playing again to reset state
+  const handlePlayAgain = () => {
+    // Reset all game-related states
+    setScoreSaved(false);
+    setScoreError(null);
+    setPreviousBest(null);
+    setGameTracked(false);
+    
+    // Start a new game
+    gameState.startGame();
+  };
 
   // Main UI content based on game state
   let content;
@@ -250,18 +262,20 @@ function App() {
                 </div>
               )}
               
-              <button
-                onClick={() => { 
-                  gameState.resetGame();
-                  setScoreSaved(false);
-                  setGameTracked(false);
-                  setScoreError(null);
-                  setPreviousBest(null);
-                }}
-                className="bg-neo-bg text-neo-text px-8 py-3 rounded-lg text-lg font-medium hover:bg-neo-hover transition-all"
-              >
-                Play Again
-              </button>
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={gameState.resetGame}
+                  className="bg-neo-bg text-neo-text px-6 py-3 rounded-lg text-lg font-medium hover:bg-neo-bg/70 transition-all shadow-neo"
+                >
+                  Back to Home
+                </button>
+                <button
+                  onClick={handlePlayAgain}
+                  className="bg-neo-accent text-white px-6 py-3 rounded-lg text-lg font-medium hover:bg-opacity-90 transition-all shadow-neo"
+                >
+                  Play Again
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -269,25 +283,21 @@ function App() {
     );
   }
 
-  // Return main content with modals
   return (
     <>
       {content}
       
-      {/* Modals - positioned outside the main content for better rendering */}
-      {isAuthModalOpen && (
-        <AuthModal 
-          isOpen={isAuthModalOpen} 
-          onClose={() => setIsAuthModalOpen(false)} 
-          initialMode={authModalMode}
-        />
-      )}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authModalMode}
+      />
       
-      {isLeaderboardOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 modal-overlay">
-          <Leaderboard key={leaderboardKey} onClose={() => setIsLeaderboardOpen(false)} />
-        </div>
-      )}
+      <Leaderboard
+        key={leaderboardKey}
+        isOpen={isLeaderboardOpen}
+        onClose={() => setIsLeaderboardOpen(false)}
+      />
     </>
   );
 }
