@@ -87,7 +87,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <p className="text-neo-muted mb-4">
             {mode === 'login' 
               ? 'Sign in to save your scores and see your stats' 
-              : 'Join NeoGuessr to track your progress and compete on the leaderboard'}
+              : 'Join Neoguesser to track your progress and compete on the leaderboard'}
           </p>
         </div>
         
