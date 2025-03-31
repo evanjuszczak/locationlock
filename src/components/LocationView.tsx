@@ -222,7 +222,7 @@ export const LocationView: React.FC<LocationViewProps> = ({ location }) => {
   };
 
   const openProduction = () => {
-    window.open('https://locationlock-hq576bw9c-evans-projects-6bc84f56.vercel.app', '_blank');
+    window.open('https://locationlock-4jhgjv3ye-evans-projects-6bc84f56.vercel.app', '_blank');
   };
 
   return (
