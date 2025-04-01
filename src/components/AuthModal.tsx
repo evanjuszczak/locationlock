@@ -53,7 +53,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (success) {
           setSuccessMessage('Account created successfully! Please check your email for verification.');
         } else {
-          setError(error.message || 'An error occurred during sign up.');
+          if (error.message && (
+            error.message.includes('certificate') || 
+            error.message.includes('SSL') ||
+            error.message.includes('Failed to fetch')
+          )) {
+            setIsNetworkError(true);
+            setError('Browser security is blocking the connection to our authentication service. Try using Chrome or Firefox, or check your browser security settings.');
+          } else {
+            setError(error.message || 'An error occurred during sign up.');
+          }
         }
       } else {
         const { success, error } = await signIn(email, password);
@@ -63,12 +72,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           }
           onClose();
         } else {
-          setError(error.message || 'Invalid email or password.');
+          if (error.message && (
+            error.message.includes('certificate') || 
+            error.message.includes('SSL') ||
+            error.message.includes('Failed to fetch')
+          )) {
+            setIsNetworkError(true);
+            setError('Browser security is blocking the connection to our authentication service. Try using Chrome or Firefox, or check your browser security settings.');
+          } else {
+            setError(error.message || 'Invalid email or password.');
+          }
         }
       }
     } catch (err) {
       if (err instanceof Error) {
-        setError(err.message || 'An unexpected error occurred.');
+        if (err.message && (
+          err.message.includes('certificate') || 
+          err.message.includes('SSL') ||
+          err.message.includes('Failed to fetch')
+        )) {
+          setIsNetworkError(true);
+          setError('Browser security is blocking the connection to our authentication service. Try using Chrome or Firefox, or check your browser security settings.');
+        } else {
+          setError(err.message || 'An unexpected error occurred.');
+        }
       } else {
         setError('An unexpected error occurred.');
       }
@@ -175,6 +202,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-sm">
               <p>{error}</p>
+              
+              {isNetworkError && (
+                <div className="mt-2">
+                  <p className="mb-2 text-xs">SSL certificate issues are common and can be resolved by:</p>
+                  <ul className="list-disc text-xs ml-4 mb-2 space-y-1">
+                    <li>Try using a different browser (Chrome or Firefox)</li>
+                    <li>Update your browser to the latest version</li>
+                    <li>Check if your antivirus or firewall is blocking secure connections</li>
+                    <li>Make sure your device date/time is correct</li>
+                  </ul>
+                </div>
+              )}
+              
               <button
                 type="button"
                 onClick={() => handleSubmit(new Event('click') as any)}
