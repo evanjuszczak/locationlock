@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MapPin, Trophy } from 'lucide-react';
 import { useGameStore } from './store';
 import { LocationView } from './components/LocationView';
@@ -27,11 +27,33 @@ function App() {
   const [previousUserId, setPreviousUserId] = useState<string | null>(null);
   const [leaderboardKey, setLeaderboardKey] = useState(0);
   const [startingGame, setStartingGame] = useState(false);
+  const isInitialMount = useRef(true);
 
-  // Reset all game states when user changes (logout/login with different account)
+  // Only reset when there's a real user change after the initial mount,
+  // not on the initial null -> null transition for anonymous users
   useEffect(() => {
-    // Check if user has changed and auth loading is complete
-    if (!authLoading && user?.id !== previousUserId) {
+    // Skip the effect on initial mount
+    if (isInitialMount.current) {
+      console.log("Initial auth mount, setting previousUserId:", user?.id || null);
+      setPreviousUserId(user?.id || null);
+      isInitialMount.current = false;
+      return;
+    }
+    
+    // Only proceed if auth loading is complete
+    if (authLoading) return;
+    
+    console.log("Auth changed:", { 
+      current: user?.id || 'anonymous', 
+      previous: previousUserId || 'anonymous',
+      shouldReset: Boolean(user?.id !== previousUserId && (user?.id || previousUserId))
+    });
+    
+    // If we go from user A to user B or from user A to anonymous,
+    // we should reset, but not when going from anonymous to anonymous
+    const isRealUserChange = user?.id !== previousUserId && (user?.id || previousUserId);
+    
+    if (isRealUserChange) {
       // Update previous user ID
       setPreviousUserId(user?.id || null);
       
@@ -43,10 +65,14 @@ function App() {
       
       // If user changed during a game, reset it to avoid tracking issues
       if (gameState.isGameStarted || gameState.isGameFinished) {
+        console.log("User changed during game, resetting game");
         gameState.resetGame();
       }
+    } else {
+      // Just update previousUserId without resetting game
+      setPreviousUserId(user?.id || null);
     }
-  }, [user, previousUserId, gameState, authLoading]);
+  }, [user, gameState, authLoading]);
 
   // Track when a game is finished and increment games played (only for logged in users)
   useEffect(() => {
