@@ -102,10 +102,12 @@ export const LocationView: React.FC<LocationViewProps> = ({ location }) => {
   };
 
   useEffect(() => {
+    // Safety check - don't try to initialize if no container
     if (!containerRef.current) return;
     
     let isMounted = true;
     let timeoutId: number | undefined;
+    let imageLoadSuccessTimeout: number | undefined;
     
     setLoadingState('loading');
     setError(null);
@@ -129,7 +131,7 @@ export const LocationView: React.FC<LocationViewProps> = ({ location }) => {
         viewerRef.current = viewer;
 
         // Instead of using events, we'll manually set loading state after successful image loading
-        const imageLoadSuccessTimeout = setTimeout(() => {
+        imageLoadSuccessTimeout = window.setTimeout(() => {
           if (isMounted) {
             setLoadingState('success');
           }
@@ -179,7 +181,9 @@ export const LocationView: React.FC<LocationViewProps> = ({ location }) => {
             containerRef.current.appendChild(indicator);
           }
         } catch (err) {
-          clearTimeout(imageLoadSuccessTimeout);
+          if (imageLoadSuccessTimeout) {
+            clearTimeout(imageLoadSuccessTimeout);
+          }
           if (err instanceof DOMException && err.name === 'AbortError') {
             throw new Error('Connection timeout. Please try again.');
           } else if (err instanceof Error && err.message.includes('rate limit')) {
@@ -200,14 +204,23 @@ export const LocationView: React.FC<LocationViewProps> = ({ location }) => {
       }
     };
 
-    // Start the loading process
-    tryLoadMapillaryViewer();
+    // Start the loading process and handle any uncaught errors
+    tryLoadMapillaryViewer().catch(err => {
+      console.warn('Unhandled error in LocationView:', err);
+      if (isMounted) {
+        setError('An unexpected error occurred. Please try again.');
+        setLoadingState('error');
+      }
+    });
 
     // Cleanup function
     return () => {
       isMounted = false;
       if (timeoutId) {
         clearTimeout(timeoutId);
+      }
+      if (imageLoadSuccessTimeout) {
+        clearTimeout(imageLoadSuccessTimeout);
       }
       if (viewerRef.current) {
         viewerRef.current.remove();

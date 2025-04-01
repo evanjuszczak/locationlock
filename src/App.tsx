@@ -29,8 +29,8 @@ function App() {
 
   // Reset all game states when user changes (logout/login with different account)
   useEffect(() => {
-    // Check if user has changed
-    if (user?.id !== previousUserId) {
+    // Check if user has changed and auth loading is complete
+    if (!authLoading && user?.id !== previousUserId) {
       // Update previous user ID
       setPreviousUserId(user?.id || null);
       
@@ -45,7 +45,7 @@ function App() {
         gameState.resetGame();
       }
     }
-  }, [user, previousUserId, gameState]);
+  }, [user, previousUserId, gameState, authLoading]);
 
   // Track when a game is finished and increment games played (only for logged in users)
   useEffect(() => {
@@ -57,8 +57,17 @@ function App() {
       }
     };
 
-    trackGamePlayed();
-  }, [gameState.isGameFinished, user, gameTracked]);
+    // Only run if auth loading is complete
+    if (!authLoading) {
+      trackGamePlayed();
+    }
+  }, [gameState.isGameFinished, user, gameTracked, authLoading]);
+
+  // Handle starting a game - can be done whether user is logged in or not
+  const handleStartGame = () => {
+    // No need to check for auth here - allow anyone to play
+    gameState.startGame();
+  };
 
   // Reset game tracked state when starting a new game
   useEffect(() => {
@@ -129,7 +138,7 @@ function App() {
           <p className="text-neo-muted mb-8">Test your map knowledge, ad free.</p>
           
           <button
-            onClick={gameState.startGame}
+            onClick={handleStartGame}
             className="bg-neo-accent text-white w-full px-6 py-3 rounded-lg text-lg font-medium hover:bg-opacity-90 transition-all mb-6 shadow-lg"
           >
             Start Game
@@ -189,20 +198,24 @@ function App() {
 
           {!gameState.isGameFinished && (
             <>
-              <div className="rounded-neo overflow-hidden shadow-neo">
-                <LocationView location={currentRound.actualLocation} />
-              </div>
-              
-              {gameState.showingResult ? (
-                <ResultMap 
-                  actualLocation={currentRound.actualLocation}
-                  guessedLocation={currentRound.guessedLocation}
-                  distance={currentRound.distance}
-                  score={currentRound.score || 0}
-                  onNextRound={gameState.proceedToNextRound}
-                />
-              ) : (
-                <GuessMap onGuess={gameState.submitGuess} />
+              {currentRound && (
+                <>
+                  <div className="rounded-neo overflow-hidden shadow-neo">
+                    <LocationView location={currentRound.actualLocation} />
+                  </div>
+                  
+                  {gameState.showingResult ? (
+                    <ResultMap 
+                      actualLocation={currentRound.actualLocation}
+                      guessedLocation={currentRound.guessedLocation}
+                      distance={currentRound.distance}
+                      score={currentRound.score || 0}
+                      onNextRound={gameState.proceedToNextRound}
+                    />
+                  ) : (
+                    <GuessMap onGuess={gameState.submitGuess} />
+                  )}
+                </>
               )}
             </>
           )}
