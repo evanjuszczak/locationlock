@@ -17,6 +17,28 @@ interface AuthContextType {
   loading: boolean;
 }
 
+// Helper to handle auth errors and provide meaningful messages
+const handleAuthError = (error: any) => {
+  // Log the original error
+  console.error('Auth error:', error);
+  
+  // Check if this is a certificate or network error
+  if (
+    error.message?.includes('SSL') ||
+    error.message?.includes('certificate') ||
+    error.message?.includes('ERR_CERT_AUTHORITY_INVALID') ||
+    error.message?.includes('Failed to fetch')
+  ) {
+    return {
+      message: 'Unable to connect securely to the authentication service. This may be caused by network issues or browser settings.',
+      original: error
+    };
+  }
+  
+  // Return original error if not a certificate issue
+  return error;
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -80,12 +102,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return { error: null, success: true };
     } catch (error) {
-      return { error, success: false };
+      const processedError = handleAuthError(error);
+      return { error: processedError, success: false };
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
+      // First, attempt to clear any existing sessions
+      // This can help in cases where a previous session has certificate issues
+      try {
+        await supabase.auth.signOut();
+      } catch (signOutError) {
+        console.warn('Error during pre-login sign out:', signOutError);
+        // Continue with sign in attempt even if sign out fails
+      }
+
+      // Now attempt sign in
       const { error, data } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -97,12 +130,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return { error: null, success: true };
     } catch (error) {
-      return { error, success: false };
+      console.error('Sign in error (caught):', error);
+      
+      // Specialized error handling
+      const processedError = handleAuthError(error);
+      return { error: processedError, success: false };
     }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error during sign out:', error);
+      // Still clear local session state even if API call fails
+      setSession(null);
+      setUser(null);
+    }
   };
 
   const value = {

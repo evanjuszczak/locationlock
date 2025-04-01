@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, User, Mail, Lock } from 'lucide-react';
+import { X, User, Mail, Lock, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AuthModalProps {
@@ -20,6 +20,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isNetworkError, setIsNetworkError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
@@ -30,6 +31,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setPassword('');
     setUsername('');
     setError(null);
+    setIsNetworkError(false);
     setSuccessMessage(null);
   };
 
@@ -41,6 +43,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsNetworkError(false);
     setSuccessMessage(null);
     setLoading(true);
 
@@ -50,6 +53,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (success) {
           setSuccessMessage('Account created successfully! Please check your email for verification.');
         } else {
+          // Check if this is a network/SSL error
+          const isNetworkProblem = 
+            error.message?.includes('network') || 
+            error.message?.includes('connect') ||
+            error.message?.includes('SSL') ||
+            error.message?.includes('certificate');
+          
+          setIsNetworkError(isNetworkProblem);
           setError(error.message || 'An error occurred during sign up.');
         }
       } else {
@@ -67,11 +78,84 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           
           onClose();
         } else {
+          // Check if this is a network/SSL error
+          const isNetworkProblem = 
+            error.message?.includes('network') || 
+            error.message?.includes('connect') ||
+            error.message?.includes('SSL') ||
+            error.message?.includes('certificate');
+          
+          setIsNetworkError(isNetworkProblem);
           setError(error.message || 'Invalid email or password.');
         }
       }
     } catch (err) {
-      setError('An unexpected error occurred.');
+      if (err instanceof Error) {
+        // Detect network or SSL errors
+        if (
+          err.message.includes('network') ||
+          err.message.includes('connect') ||
+          err.message.includes('SSL') ||
+          err.message.includes('certificate')
+        ) {
+          setIsNetworkError(true);
+          setError('Connection issue: Unable to connect securely to the authentication service. This may be due to network settings or a browser security configuration.');
+        } else {
+          setError(err.message || 'An unexpected error occurred.');
+        }
+      } else {
+        setError('An unexpected error occurred.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function to retry login after clearing cached session
+  const handleRetry = async () => {
+    setError(null);
+    setIsNetworkError(false);
+    setLoading(true);
+    
+    try {
+      // Force clear localStorage auth data which might be causing issues
+      localStorage.removeItem('supabase.auth.token');
+      
+      // Additional attempt to clear potential bad session data
+      try {
+        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/logout`, {
+          method: 'POST',
+          cache: 'no-cache',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      } catch (e) {
+        // Ignore errors from this attempt
+        console.warn('Error during manual session clear, continuing with login attempt');
+      }
+      
+      // Now try the login again with fresh session
+      if (mode === 'login') {
+        const { success, error } = await signIn(email, password);
+        if (success) {
+          if (onLoginSuccess) {
+            await Promise.resolve(onLoginSuccess());
+          }
+          onClose();
+        } else {
+          setError(error.message || 'Login failed after retry. Please try again later.');
+        }
+      } else {
+        const { success, error } = await signUp(email, password, username);
+        if (success) {
+          setSuccessMessage('Account created successfully! Please check your email for verification.');
+        } else {
+          setError(error.message || 'Registration failed after retry. Please try again later.');
+        }
+      }
+    } catch (err) {
+      setError('Failed to complete authentication. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -174,7 +258,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-sm">
-              {error}
+              <p>{error}</p>
+              
+              {/* Show retry button for network errors */}
+              {isNetworkError && (
+                <div className="mt-2">
+                  <p className="mb-2 text-xs">This might be caused by a SSL certificate issue or network problem.</p>
+                  <button
+                    type="button"
+                    onClick={handleRetry}
+                    className="flex items-center justify-center gap-1 px-3 py-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded text-xs mt-1"
+                  >
+                    <RefreshCw size={12} className="animate-spin" />
+                    Retry with Clean Session
+                  </button>
+                </div>
+              )}
             </div>
           )}
           
