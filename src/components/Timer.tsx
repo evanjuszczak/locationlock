@@ -40,16 +40,16 @@ export const Timer: React.FC = () => {
   };
   
   return (
-    <div className="bg-neo-bg rounded-lg shadow-neo p-3 w-48">
+    <div className="bg-neo-bg rounded-lg shadow-neo p-2 sm:p-3 w-36 sm:w-48">
       <div className="flex items-center justify-center mb-1">
-        <Clock className="w-4 h-4 text-neo-accent mr-2" />
-        <div className="text-sm text-neo-muted">Time Remaining</div>
+        <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-neo-accent mr-1 sm:mr-2" />
+        <div className="text-xs sm:text-sm text-neo-muted">Time Remaining</div>
       </div>
-      <div className={`text-2xl font-bold text-center ${getTimerColor()}`}>
+      <div className={`text-xl sm:text-2xl font-bold text-center ${getTimerColor()}`}>
         {formatTime(timeRemaining)}
       </div>
       {/* Progress bar for time */}
-      <div className="mt-2 h-1 w-full bg-neo-border rounded-full overflow-hidden">
+      <div className="mt-1 sm:mt-2 h-1 w-full bg-neo-border rounded-full overflow-hidden">
         <div 
           className="h-full bg-neo-accent transition-all duration-1000 ease-linear"
           style={{ width: getProgressWidth() }}

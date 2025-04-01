@@ -272,11 +272,11 @@ function App() {
     content = (
       <div className="min-h-screen bg-neo-bg p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-6">
-          <div className="grid grid-cols-3 items-center bg-neo-card p-4 rounded-neo shadow-neo">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-0 items-center bg-neo-card p-4 rounded-neo shadow-neo">
             {/* Left: Title */}
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-neo-text flex items-center">
-                <MapPin className="w-6 h-6 mr-2 text-neo-accent" /> LocationLock
+            <div className="text-center sm:text-left">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-neo-text flex items-center justify-center sm:justify-start">
+                <MapPin className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-neo-accent" /> LocationLock
               </h1>
             </div>
             
@@ -288,10 +288,10 @@ function App() {
             </div>
             
             {/* Right: Round counter and score */}
-            <div className="flex justify-end items-center gap-4">
+            <div className="flex justify-center sm:justify-end items-center gap-2 sm:gap-4">
               {!gameState.isGameFinished && (
-                <div className="bg-neo-bg px-4 py-2 rounded-lg">
-                  <div className="text-lg font-semibold text-neo-text">
+                <div className="bg-neo-bg px-3 sm:px-4 py-1 sm:py-2 rounded-lg">
+                  <div className="text-base sm:text-lg font-semibold text-neo-text">
                     Round {displayRound}/{gameState.rounds.length}
                   </div>
                 </div>
@@ -325,19 +325,19 @@ function App() {
           )}
 
           {gameState.isGameFinished && (
-            <div className="bg-neo-card p-8 rounded-neo shadow-neo text-center">
-              <div className="mx-auto w-20 h-20 bg-neo-accent/10 flex items-center justify-center rounded-full mb-6">
-                <MapPin className="w-10 h-10 text-neo-accent" />
+            <div className="bg-neo-card p-4 sm:p-8 rounded-neo shadow-neo text-center">
+              <div className="mx-auto w-16 h-16 sm:w-20 sm:h-20 bg-neo-accent/10 flex items-center justify-center rounded-full mb-4 sm:mb-6">
+                <MapPin className="w-8 h-8 sm:w-10 sm:h-10 text-neo-accent" />
               </div>
-              <h2 className="text-3xl font-bold mb-2">Game Complete!</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-2">Game Complete!</h2>
               <p className="text-neo-muted mb-4">Great job exploring the world</p>
-              <p className="text-2xl mb-8 font-bold">
+              <p className="text-xl sm:text-2xl mb-6 sm:mb-8 font-bold">
                 <span className="text-neo-muted">Final Score: </span>
                 <span className="text-neo-accent">{gameState.totalScore}</span>
               </p>
               
               {user ? (
-                <div className="mb-8">
+                <div className="mb-6 sm:mb-8">
                   {scoreSaved ? (
                     <div className="p-3 bg-green-500/10 text-green-400 border border-green-500/20 rounded-lg mb-4">
                       Your score has been saved to the leaderboard!
@@ -354,7 +354,7 @@ function App() {
                   ) : (
                     <button 
                       onClick={() => handleSaveScore(user.user_metadata?.username || 'Player')}
-                      className="bg-neo-accent text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-opacity-90 transition-all mb-4"
+                      className="bg-neo-accent text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg text-base sm:text-lg font-medium hover:bg-opacity-90 transition-all mb-4"
                     >
                       Save Score to Leaderboard
                     </button>
@@ -368,27 +368,27 @@ function App() {
                   </button>
                 </div>
               ) : (
-                <div className="mb-8">
+                <div className="mb-6 sm:mb-8">
                   <p className="text-neo-muted mb-4">Sign in to save your score to the leaderboard</p>
                   <button 
                     onClick={() => openAuthModal('login', true)}
-                    className="bg-neo-accent text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-opacity-90 transition-all"
+                    className="bg-neo-accent text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg text-base sm:text-lg font-medium hover:bg-opacity-90 transition-all"
                   >
                     Sign In
                   </button>
                 </div>
               )}
               
-              <div className="flex justify-center gap-4">
+              <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
                 <button
                   onClick={gameState.resetGame}
-                  className="bg-neo-bg text-neo-text px-6 py-3 rounded-lg text-lg font-medium hover:bg-neo-bg/70 transition-all shadow-neo"
+                  className="bg-neo-bg text-neo-text px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-base sm:text-lg font-medium hover:bg-neo-bg/70 transition-all shadow-neo mb-3 sm:mb-0"
                 >
                   Back to Home
                 </button>
                 <button
                   onClick={handlePlayAgain}
-                  className="bg-neo-accent text-white px-6 py-3 rounded-lg text-lg font-medium hover:bg-opacity-90 transition-all shadow-neo"
+                  className="bg-neo-accent text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-base sm:text-lg font-medium hover:bg-opacity-90 transition-all shadow-neo"
                 >
                   Play Again
                 </button>

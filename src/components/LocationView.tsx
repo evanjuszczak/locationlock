@@ -341,7 +341,7 @@ export const LocationView: React.FC<LocationViewProps> = ({ location }) => {
   };
 
   return (
-    <div className="relative w-full h-[400px] rounded-lg overflow-hidden">
+    <div className="relative w-full h-[300px] sm:h-[350px] md:h-[400px] rounded-lg overflow-hidden">
       <div 
         ref={containerRef} 
         className="w-full h-full"
@@ -365,25 +365,25 @@ export const LocationView: React.FC<LocationViewProps> = ({ location }) => {
       {/* Error display */}
       {error && loadingState === 'error' && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white">
-          <div className="bg-black bg-opacity-70 p-4 rounded-lg max-w-xs text-center">
-            <p className="mb-2">{error}</p>
-            <div className="flex gap-2 justify-center">
+          <div className="bg-black bg-opacity-70 p-3 sm:p-4 rounded-lg max-w-xs text-center">
+            <p className="mb-2 text-sm sm:text-base">{error}</p>
+            <div className="flex flex-wrap gap-2 justify-center">
               <button 
                 onClick={handleRetry}
-                className="px-4 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm mt-2"
+                className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-xs sm:text-sm"
               >
                 Retry
               </button>
               <button 
                 onClick={() => setLoadingState('success')}
-                className="px-4 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm mt-2"
+                className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-xs sm:text-sm"
               >
                 Continue Anyway
               </button>
               {!window.location.href.includes('vercel.app') && (
                 <button 
                   onClick={openProduction}
-                  className="px-4 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm mt-2"
+                  className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-xs sm:text-sm"
                 >
                   Open Deployed App
                 </button>
