@@ -26,6 +26,7 @@ function App() {
   const [gameTracked, setGameTracked] = useState(false);
   const [previousUserId, setPreviousUserId] = useState<string | null>(null);
   const [leaderboardKey, setLeaderboardKey] = useState(0);
+  const [startingGame, setStartingGame] = useState(false);
 
   // Reset all game states when user changes (logout/login with different account)
   useEffect(() => {
@@ -52,7 +53,11 @@ function App() {
     const trackGamePlayed = async () => {
       // Only track if game just finished, user is logged in, and we haven't tracked this game yet
       if (gameState.isGameFinished && user && !gameTracked) {
-        await incrementGamesPlayed(user.id);
+        try {
+          await incrementGamesPlayed(user.id);
+        } catch (error) {
+          console.warn("Failed to increment games played:", error);
+        }
         setGameTracked(true);
       }
     };
@@ -65,8 +70,21 @@ function App() {
 
   // Handle starting a game - can be done whether user is logged in or not
   const handleStartGame = () => {
-    // No need to check for auth here - allow anyone to play
-    gameState.startGame();
+    // Set starting state to prevent multiple clicks
+    setStartingGame(true);
+    
+    // Force start the game regardless of auth state
+    console.log("Starting game, auth state:", authLoading ? "loading" : "ready");
+    
+    try {
+      // Start the game regardless of auth state
+      gameState.startGame();
+    } catch (error) {
+      console.error("Error starting game:", error);
+    } finally {
+      // Clear starting state
+      setStartingGame(false);
+    }
   };
 
   // Reset game tracked state when starting a new game
@@ -119,7 +137,7 @@ function App() {
     setGameTracked(false);
     
     // Start a new game
-    gameState.startGame();
+    handleStartGame();
   };
 
   // Main UI content based on game state
@@ -139,9 +157,10 @@ function App() {
           
           <button
             onClick={handleStartGame}
-            className="bg-neo-accent text-white w-full px-6 py-3 rounded-lg text-lg font-medium hover:bg-opacity-90 transition-all mb-6 shadow-lg"
+            disabled={startingGame}
+            className="bg-neo-accent text-white w-full px-6 py-3 rounded-lg text-lg font-medium hover:bg-opacity-90 transition-all mb-6 shadow-lg disabled:opacity-70"
           >
-            Start Game
+            {startingGame ? 'Starting...' : 'Start Game'}
           </button>
           
           <div className="flex justify-between items-center mb-6">

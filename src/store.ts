@@ -54,12 +54,18 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   startGame: () => {
+    console.log("🎮 startGame called - generating rounds");
+    
+    // Generate random locations for the game
     const rounds = Array(ROUNDS_PER_GAME).fill(null).map(() => ({
       actualLocation: getRandomLocation()
     }));
     
     const { settings } = get();
     
+    console.log(`🎮 Setting up game with ${ROUNDS_PER_GAME} rounds`);
+    
+    // Update the game state
     set({
       rounds,
       currentRound: 0,
@@ -70,9 +76,16 @@ export const useGameStore = create<GameState>((set, get) => ({
       timeRemaining: settings.roundTime,
       timerActive: true
     });
+    
+    console.log("🎮 Game started successfully", { 
+      isStarted: get().isGameStarted,
+      roundCount: get().rounds.length
+    });
   },
   
   resetGame: () => {
+    console.log("🎮 resetGame called");
+    
     set({
       rounds: [],
       currentRound: 0,
@@ -83,6 +96,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       timeRemaining: get().settings.roundTime,
       timerActive: false
     });
+    
+    console.log("🎮 Game reset successfully");
   },
 
   submitGuess: (guessedLocation: Location) => {

@@ -25,23 +25,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Create a timeout to ensure we don't block indefinitely if Supabase auth is broken
+    const authTimeout = setTimeout(() => {
+      console.warn('Auth initialization timed out - treating as not authenticated');
       setLoading(false);
-    });
+    }, 5000); // 5 seconds timeout
+
+    // Get initial session
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        console.log('Auth session initialized', { hasSession: !!session });
+        setSession(session);
+        setUser(session?.user ?? null);
+      })
+      .catch(error => {
+        console.error('Error getting auth session:', error);
+      })
+      .finally(() => {
+        setLoading(false);
+        clearTimeout(authTimeout);
+      });
 
     // Listen for changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Auth state changed', { event: _event, hasSession: !!session });
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(authTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, username: string) => {
