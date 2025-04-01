@@ -78,7 +78,6 @@ export const GameSettings: React.FC = () => {
               <li>You'll see a street view image for each location</li>
               <li>Place your guess on the world map</li>
               <li>The closer your guess, the more points you earn</li>
-              <li>You get a time bonus for quick guesses</li>
               <li>If time runs out, you receive 0 points for that round</li>
               <li>Toggle navigation on/off for different challenge levels</li>
             </ul>
