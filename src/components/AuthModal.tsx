@@ -48,7 +48,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       if (mode === 'signup') {
         const { success, error } = await signUp(email, password, username);
         if (success) {
-          setSuccessMessage('Account created successfully! Please check your email for verification.');
+          setSuccessMessage('Account created successfully! Please login with the credentials you used to continue.');
         } else {
           setError(error.message || 'An error occurred during sign up.');
         }
