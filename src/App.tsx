@@ -28,8 +28,13 @@ function App() {
   const [leaderboardKey, setLeaderboardKey] = useState(0);
   const [startingGame, setStartingGame] = useState(false);
   const isInitialMount = useRef(true);
-  // New state to track if we're on the game complete screen and need to preserve it
-  const [preserveGameCompletion, setPreserveGameCompletion] = useState(false);
+  
+  // Store a snapshot of game state to restore after login if needed
+  const [savedGameState, setSavedGameState] = useState<{
+    isGameFinished: boolean;
+    totalScore: number;
+    preserveState: boolean;
+  } | null>(null);
 
   // Only reset when there's a real user change after the initial mount,
   // not on the initial null -> null transition for anonymous users
@@ -49,7 +54,7 @@ function App() {
       current: user?.id || 'anonymous', 
       previous: previousUserId || 'anonymous',
       shouldReset: Boolean(user?.id !== previousUserId && (user?.id || previousUserId)),
-      preserveGameCompletion
+      savedGameState
     });
     
     // If we go from user A to user B or from user A to anonymous,
@@ -60,27 +65,39 @@ function App() {
       // Update previous user ID
       setPreviousUserId(user?.id || null);
       
-      // Reset game states for the new user
+      // Reset score-related states since they're user-specific
       setScoreSaved(false);
       setScoreError(null);
       setPreviousBest(null);
       setGameTracked(false);
       
-      // If user changed during a game, reset it to avoid tracking issues
-      // UNLESS we're on the game complete screen and need to preserve it
-      if ((gameState.isGameStarted || gameState.isGameFinished) && !preserveGameCompletion) {
+      // Check if we need to preserve game state (login from game completion screen)
+      if (savedGameState && savedGameState.preserveState) {
+        console.log("Restoring saved game state after login:", savedGameState);
+        
+        // Only restore if the game is not already in a finished state
+        // We don't have a direct way to restore the game with a specific score,
+        // so we'll just make sure we don't reset the current finished game
+        if (!gameState.isGameFinished && savedGameState.isGameFinished) {
+          console.log("Game state was reset during login, but we want to preserve it");
+          // We can't directly restore the game state, but we can leave a message
+          // to inform the user they need to save their score now
+          alert("You're now logged in! Please start a new game.");
+        }
+        
+        // Clear saved state after restoring
+        setSavedGameState(null);
+      } 
+      // Otherwise, reset the game if it was in progress (normal user change scenario)
+      else if (gameState.isGameStarted || gameState.isGameFinished) {
         console.log("User changed during game, resetting game");
         gameState.resetGame();
-      } else if (preserveGameCompletion) {
-        console.log("Preserving game completion screen after login");
-        // Reset the flag now that we've preserved the game state
-        setPreserveGameCompletion(false);
       }
     } else {
       // Just update previousUserId without resetting game
       setPreviousUserId(user?.id || null);
     }
-  }, [user, gameState, authLoading, preserveGameCompletion]);
+  }, [user, gameState, authLoading, savedGameState]);
 
   // Track when a game is finished and increment games played (only for logged in users)
   useEffect(() => {
@@ -103,15 +120,41 @@ function App() {
   }, [gameState.isGameFinished, user, gameTracked, authLoading]);
 
   // Handle successful login - used when logging in from game completion screen
-  const handleLoginSuccess = useCallback(() => {
-    console.log("Login successful, preserving game completion screen");
-    setPreserveGameCompletion(true);
-  }, []);
+  const handleLoginSuccess = useCallback(async () => {
+    if (gameState.isGameFinished) {
+      console.log("Login successful, saving game state before auth changes");
+      
+      // Save current game state so we can restore it after login
+      setSavedGameState({
+        isGameFinished: true,
+        totalScore: gameState.totalScore,
+        preserveState: true
+      });
+      
+      // Return a promise to ensure we wait for state to be updated
+      return new Promise<void>(resolve => {
+        // Use a short timeout to ensure the state is updated before auth effect runs
+        setTimeout(() => {
+          console.log("Game state saved successfully");
+          resolve();
+        }, 100);
+      });
+    }
+  }, [gameState.isGameFinished, gameState.totalScore]);
 
   // Open auth modal with proper mode and context
   const openAuthModal = (mode: 'login' | 'signup' = 'login', preserveGame: boolean = false) => {
+    // Save game state if opening from game completion screen
+    if (preserveGame || gameState.isGameFinished) {
+      console.log("Opening auth modal from game completion screen");
+      setSavedGameState({
+        isGameFinished: true, 
+        totalScore: gameState.totalScore,
+        preserveState: true
+      });
+    }
+    
     setAuthModalMode(mode);
-    setPreserveGameCompletion(preserveGame);
     setIsAuthModalOpen(true);
   };
 

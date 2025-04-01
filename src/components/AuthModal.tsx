@@ -6,7 +6,7 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialMode?: 'login' | 'signup';
-  onLoginSuccess?: () => void;
+  onLoginSuccess?: () => void | Promise<void>;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ 
@@ -56,9 +56,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         const { success, error } = await signIn(email, password);
         if (success) {
           if (onLoginSuccess) {
-            console.log("Login successful, calling success callback");
-            onLoginSuccess();
+            console.log("Login successful, calling success callback before closing modal");
+            try {
+              await Promise.resolve(onLoginSuccess());
+              console.log("Login success callback completed");
+            } catch (callbackError) {
+              console.error("Error in login success callback:", callbackError);
+            }
           }
+          
           onClose();
         } else {
           setError(error.message || 'Invalid email or password.');
