@@ -38,18 +38,57 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ onClose, isOpen }) => 
           if (success && data) {
             setScores(data);
           } else {
-            setError('Failed to load leaderboard scores');
+            // Simplified error handling to avoid TypeScript issues
+            let errorMessage = 'Failed to load leaderboard scores';
+            
+            // Check if the error might be SSL related
+            if (error) {
+              const errorStr = String(error);
+              if (
+                errorStr.includes('certificate') || 
+                errorStr.includes('SSL') || 
+                errorStr.includes('secure')
+              ) {
+                errorMessage = 'SSL Certificate Error: Browser security settings are preventing loading the leaderboard. Try using a different browser or device.';
+              }
+            }
+            
+            setError(errorMessage);
           }
         } else {
           const { success, data, error } = await getMostActivePlayers(10);
           if (success && data) {
             setActivePlayers(data);
           } else {
-            setError('Failed to load most active players');
+            // Simplified error handling to avoid TypeScript issues
+            let errorMessage = 'Failed to load most active players';
+            
+            // Check if the error might be SSL related
+            if (error) {
+              const errorStr = String(error);
+              if (
+                errorStr.includes('certificate') || 
+                errorStr.includes('SSL') || 
+                errorStr.includes('secure')
+              ) {
+                errorMessage = 'SSL Certificate Error: Browser security settings are preventing loading the leaderboard. Try using a different browser or device.';
+              }
+            }
+            
+            setError(errorMessage);
           }
         }
       } catch (err) {
-        setError('An unexpected error occurred');
+        // Try to provide a helpful message for SSL errors
+        if (err instanceof Error && (
+          err.message.includes('certificate') || 
+          err.message.includes('SSL') || 
+          err.message.includes('secure')
+        )) {
+          setError('SSL Certificate Error: Browser security settings are preventing loading the leaderboard. Try using a different browser or device.');
+        } else {
+          setError('An unexpected error occurred');
+        }
       } finally {
         setLoading(false);
       }

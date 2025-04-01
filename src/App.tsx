@@ -248,7 +248,7 @@ function App() {
             {startingGame ? 'Starting...' : 'Start Game'}
           </button>
           
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-4">
             <button 
               onClick={openLeaderboard}
               className="flex items-center gap-2 text-neo-muted hover:text-neo-text transition-colors"
@@ -258,6 +258,14 @@ function App() {
             </button>
             
             <UserProfile onLogin={() => openAuthModal('login')} />
+          </div>
+          
+          <div className="text-xs text-neo-muted mb-6">
+            <p>Note: Signing in is completely optional - you can play without an account.</p>
+            <p>Creating an account allows you to save your scores to the leaderboard.</p>
+            {!user && (
+              <p className="mt-1">Having trouble signing in? You can still play normally.</p>
+            )}
           </div>
           
           <GameSettings />
@@ -369,12 +377,26 @@ function App() {
                 </div>
               ) : (
                 <div className="mb-6 sm:mb-8">
-                  <p className="text-neo-muted mb-4">Sign in to save your score to the leaderboard</p>
+                  <p className="text-neo-muted mb-4">
+                    Sign in to save your score to the leaderboard 
+                    <span className="block text-sm mt-1">(Optional - you can still play without signing in)</span>
+                  </p>
                   <button 
                     onClick={() => openAuthModal('login', true)}
-                    className="bg-neo-accent text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg text-base sm:text-lg font-medium hover:bg-opacity-90 transition-all"
+                    className="bg-neo-accent text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg text-base sm:text-lg font-medium hover:bg-opacity-90 transition-all mb-4"
                   >
                     Sign In
+                  </button>
+                  <div className="text-xs text-neo-muted mt-2">
+                    <p>Having trouble signing in? You can still play without an account.</p>
+                    <p>Try using a different browser or device if you want to save scores.</p>
+                  </div>
+                  <button 
+                    onClick={openLeaderboard}
+                    className="flex items-center gap-2 mx-auto text-neo-muted hover:text-neo-text transition-colors mt-4"
+                  >
+                    <Trophy size={18} className="text-neo-accent" />
+                    <span>View Leaderboard</span>
                   </button>
                 </div>
               )}

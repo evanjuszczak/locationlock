@@ -33,18 +33,25 @@ export const UserProfile: React.FC<UserProfileProps> = ({ onLogin }) => {
       
       try {
         // Fetch best score
-        const { success: scoreSuccess, data: scoreData } = await getUserBestScore(user.id);
+        const { success: scoreSuccess, data: scoreData, error: scoreError } = await getUserBestScore(user.id);
         if (scoreSuccess && scoreData) {
           setBestScore(scoreData.score);
+        } else if (scoreError) {
+          console.warn('Error fetching user best score:', scoreError);
+          // Don't let this error block the UI - just continue with null score
         }
         
         // Fetch games played
-        const { success: statsSuccess, data: statsData } = await getUserStats(user.id);
+        const { success: statsSuccess, data: statsData, error: statsError } = await getUserStats(user.id);
         if (statsSuccess && statsData) {
           setGamesPlayed(statsData.games_played);
+        } else if (statsError) {
+          console.warn('Error fetching user stats:', statsError);
+          // Don't let this error block the UI - just continue with 0 games played
         }
       } catch (error) {
-        // Remove console.error statement
+        // Log but don't block the UI
+        console.warn('Error fetching user data:', error);
       } finally {
         setLoading(false);
       }

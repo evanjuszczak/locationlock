@@ -50,7 +50,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (success) {
           setSuccessMessage('Account created successfully! Please login with the credentials you used to continue.');
         } else {
-          setError(error.message || 'An error occurred during sign up.');
+          // Check if it's an SSL certificate error
+          const errorMessage = error?.message || 'An error occurred during sign up.';
+          if (
+            errorMessage.includes('certificate') || 
+            errorMessage.includes('SSL') || 
+            errorMessage.includes('secure') ||
+            error?.code === 'ERR_CERT_AUTHORITY_INVALID'
+          ) {
+            setError(
+              'SSL Certificate Error: Your browser is not accepting our security certificate. ' +
+              'Try using a different browser, device, or network. ' +
+              'You can still play the game without logging in.'
+            );
+          } else {
+            setError(errorMessage);
+          }
         }
       } else {
         const { success, error } = await signIn(email, password);
@@ -67,11 +82,44 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           
           onClose();
         } else {
-          setError(error.message || 'Invalid email or password.');
+          // Check if it's an SSL certificate error
+          const errorMessage = error?.message || 'Invalid email or password.';
+          if (
+            errorMessage.includes('certificate') || 
+            errorMessage.includes('SSL') || 
+            errorMessage.includes('secure') ||
+            error?.code === 'ERR_CERT_AUTHORITY_INVALID'
+          ) {
+            setError(
+              'SSL Certificate Error: Your browser is not accepting our security certificate. ' +
+              'Try using a different browser, device, or network. ' +
+              'You can still play the game without logging in.'
+            );
+          } else {
+            setError(errorMessage);
+          }
         }
       }
     } catch (err) {
-      setError('An unexpected error occurred.');
+      // Check if the error is SSL related
+      if (err instanceof Error) {
+        const errorMsg = err.message;
+        if (
+          errorMsg.includes('certificate') || 
+          errorMsg.includes('SSL') || 
+          errorMsg.includes('secure')
+        ) {
+          setError(
+            'SSL Certificate Error: Your browser is not accepting our security certificate. ' +
+            'Try using a different browser, device, or network. ' +
+            'You can still play the game without logging in.'
+          );
+        } else {
+          setError('An unexpected error occurred. You can still play the game without logging in.');
+        }
+      } else {
+        setError('An unexpected error occurred. You can still play the game without logging in.');
+      }
     } finally {
       setLoading(false);
     }
