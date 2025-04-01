@@ -27,10 +27,35 @@ const handleAuthError = (error: any) => {
     error.message?.includes('SSL') ||
     error.message?.includes('certificate') ||
     error.message?.includes('ERR_CERT_AUTHORITY_INVALID') ||
+    error.message?.includes('ERR_SSL_PROTOCOL_ERROR') ||
     error.message?.includes('Failed to fetch')
   ) {
+    // Check if we're in a secure context but trying to access insecure content
+    const isMixedContentIssue = 
+      typeof window !== 'undefined' && 
+      window.location.protocol === 'https:' && 
+      error.message?.includes('mixed content');
+    
+    if (isMixedContentIssue) {
+      return {
+        message: 'Your browser is blocking insecure content. Try opening the app in a new tab or using a different browser.',
+        original: error
+      };
+    }
+    
     return {
-      message: 'Unable to connect securely to the authentication service. This may be caused by network issues or browser settings.',
+      message: 'Unable to connect securely to the authentication service. This could be due to network issues, browser security settings, or a temporary service interruption.',
+      original: error
+    };
+  }
+  
+  // Check for invalid credentials but present a user-friendly message
+  if (
+    error.message?.includes('Invalid login credentials') ||
+    error.message?.includes('Email not confirmed')
+  ) {
+    return {
+      message: 'Invalid email or password. Please check your credentials and try again.',
       original: error
     };
   }
@@ -113,6 +138,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // This can help in cases where a previous session has certificate issues
       try {
         await supabase.auth.signOut();
+        
+        // Clear any cached auth data to prevent SSL certificate issues
+        if (typeof localStorage !== 'undefined') {
+          // Remove any Supabase-related items from localStorage
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.includes('supabase') || key.includes('auth'))) {
+              localStorage.removeItem(key);
+            }
+          }
+        }
       } catch (signOutError) {
         console.warn('Error during pre-login sign out:', signOutError);
         // Continue with sign in attempt even if sign out fails

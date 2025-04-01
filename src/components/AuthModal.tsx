@@ -118,22 +118,69 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setLoading(true);
     
     try {
-      // Force clear localStorage auth data which might be causing issues
-      localStorage.removeItem('supabase.auth.token');
+      // Perform extensive cleanup of any cached sessions/tokens
       
-      // Additional attempt to clear potential bad session data
+      // 1. Clear localStorage auth data
+      if (typeof localStorage !== 'undefined') {
+        // Remove known Supabase tokens
+        localStorage.removeItem('supabase.auth.token');
+        localStorage.removeItem('locationlock-auth-storage');
+        
+        // Scan and remove any auth-related items
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (
+            key.includes('supabase') || 
+            key.includes('auth') || 
+            key.includes('session')
+          )) {
+            localStorage.removeItem(key);
+          }
+        }
+      }
+      
+      // 2. Clear sessionStorage
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('supabase.auth.token');
+        sessionStorage.removeItem('locationlock-auth-storage');
+      }
+      
+      // 3. Attempt to manually clear session cookies
+      document.cookie.split(';').forEach(cookie => {
+        const [name] = cookie.trim().split('=');
+        if (name.includes('auth') || name.includes('supabase')) {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+        }
+      });
+      
+      // 4. Additional attempt to clear potential bad session data via direct API call
       try {
-        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/logout`, {
-          method: 'POST',
-          cache: 'no-cache',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+        // Try with both fetch API and XHR as backup
+        try {
+          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/logout`, {
+            method: 'POST',
+            cache: 'no-cache',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache', 
+              'Pragma': 'no-cache'
+            },
+          });
+        } catch (e) {
+          console.warn('Error during manual fetch session clear, trying XHR as fallback');
+          // Fallback to XHR
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/logout`, true);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.send();
+        }
       } catch (e) {
         // Ignore errors from this attempt
         console.warn('Error during manual session clear, continuing with login attempt');
       }
+      
+      // 5. Wait a moment to ensure cleanup is processed
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Now try the login again with fresh session
       if (mode === 'login') {
@@ -144,18 +191,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           }
           onClose();
         } else {
-          setError(error.message || 'Login failed after retry. Please try again later.');
+          setError(`Login failed after retry: ${error.message || 'Unknown error'}. Please try using a different browser or network connection.`);
         }
       } else {
         const { success, error } = await signUp(email, password, username);
         if (success) {
           setSuccessMessage('Account created successfully! Please check your email for verification.');
         } else {
-          setError(error.message || 'Registration failed after retry. Please try again later.');
+          setError(`Registration failed after retry: ${error.message || 'Unknown error'}. Please try using a different browser or network connection.`);
         }
       }
     } catch (err) {
-      setError('Failed to complete authentication. Please try again later.');
+      console.error('Error during retry:', err);
+      setError('Connection issue persists. Please try using a different browser or network connection.');
+      setIsNetworkError(true);
     } finally {
       setLoading(false);
     }
@@ -263,15 +312,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Show retry button for network errors */}
               {isNetworkError && (
                 <div className="mt-2">
-                  <p className="mb-2 text-xs">This might be caused by a SSL certificate issue or network problem.</p>
-                  <button
-                    type="button"
-                    onClick={handleRetry}
-                    className="flex items-center justify-center gap-1 px-3 py-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded text-xs mt-1"
-                  >
-                    <RefreshCw size={12} className="animate-spin" />
-                    Retry with Clean Session
-                  </button>
+                  <p className="mb-2 text-xs">This appears to be an SSL certificate issue. Here are some things to try:</p>
+                  <ul className="list-disc text-xs ml-4 mb-2 space-y-1">
+                    <li>Try using a different browser (Firefox, Chrome, Safari, etc.)</li>
+                    <li>Clear your browser cache and cookies</li>
+                    <li>Check if you're using a VPN or proxy that might be interfering</li>
+                    <li>Make sure your device date/time settings are correct</li>
+                    <li>Turn off any browser extensions that might be affecting security</li>
+                  </ul>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      type="button"
+                      onClick={handleRetry}
+                      className="flex items-center justify-center gap-1 px-3 py-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded text-xs"
+                    >
+                      <RefreshCw size={12} className="animate-spin" />
+                      Retry
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => window.open('https://locationlock-l996k5zdg-evans-projects-6bc84f56.vercel.app', '_blank')}
+                      className="flex items-center justify-center gap-1 px-3 py-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded text-xs"
+                    >
+                      Open in New Window
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
