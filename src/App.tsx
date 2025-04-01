@@ -28,6 +28,8 @@ function App() {
   const [leaderboardKey, setLeaderboardKey] = useState(0);
   const [startingGame, setStartingGame] = useState(false);
   const isInitialMount = useRef(true);
+  // New state to track if we're on the game complete screen and need to preserve it
+  const [preserveGameCompletion, setPreserveGameCompletion] = useState(false);
 
   // Only reset when there's a real user change after the initial mount,
   // not on the initial null -> null transition for anonymous users
@@ -46,7 +48,8 @@ function App() {
     console.log("Auth changed:", { 
       current: user?.id || 'anonymous', 
       previous: previousUserId || 'anonymous',
-      shouldReset: Boolean(user?.id !== previousUserId && (user?.id || previousUserId))
+      shouldReset: Boolean(user?.id !== previousUserId && (user?.id || previousUserId)),
+      preserveGameCompletion
     });
     
     // If we go from user A to user B or from user A to anonymous,
@@ -64,15 +67,20 @@ function App() {
       setGameTracked(false);
       
       // If user changed during a game, reset it to avoid tracking issues
-      if (gameState.isGameStarted || gameState.isGameFinished) {
+      // UNLESS we're on the game complete screen and need to preserve it
+      if ((gameState.isGameStarted || gameState.isGameFinished) && !preserveGameCompletion) {
         console.log("User changed during game, resetting game");
         gameState.resetGame();
+      } else if (preserveGameCompletion) {
+        console.log("Preserving game completion screen after login");
+        // Reset the flag now that we've preserved the game state
+        setPreserveGameCompletion(false);
       }
     } else {
       // Just update previousUserId without resetting game
       setPreviousUserId(user?.id || null);
     }
-  }, [user, gameState, authLoading]);
+  }, [user, gameState, authLoading, preserveGameCompletion]);
 
   // Track when a game is finished and increment games played (only for logged in users)
   useEffect(() => {
@@ -93,6 +101,19 @@ function App() {
       trackGamePlayed();
     }
   }, [gameState.isGameFinished, user, gameTracked, authLoading]);
+
+  // Handle successful login - used when logging in from game completion screen
+  const handleLoginSuccess = useCallback(() => {
+    console.log("Login successful, preserving game completion screen");
+    setPreserveGameCompletion(true);
+  }, []);
+
+  // Open auth modal with proper mode and context
+  const openAuthModal = (mode: 'login' | 'signup' = 'login', preserveGame: boolean = false) => {
+    setAuthModalMode(mode);
+    setPreserveGameCompletion(preserveGame);
+    setIsAuthModalOpen(true);
+  };
 
   // Handle starting a game - can be done whether user is logged in or not
   const handleStartGame = () => {
@@ -141,11 +162,6 @@ function App() {
     } else if (error) {
       setScoreError(typeof error === 'string' ? error : 'Failed to save score');
     }
-  };
-
-  const openAuthModal = (mode: 'login' | 'signup' = 'login') => {
-    setAuthModalMode(mode);
-    setIsAuthModalOpen(true);
   };
 
   // Open leaderboard with refreshed data
@@ -312,7 +328,7 @@ function App() {
                 <div className="mb-8">
                   <p className="text-neo-muted mb-4">Sign in to save your score to the leaderboard</p>
                   <button 
-                    onClick={() => openAuthModal('login')}
+                    onClick={() => openAuthModal('login', true)}
                     className="bg-neo-accent text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-opacity-90 transition-all"
                   >
                     Sign In
@@ -349,6 +365,7 @@ function App() {
         isOpen={isAuthModalOpen} 
         onClose={() => setIsAuthModalOpen(false)}
         initialMode={authModalMode}
+        onLoginSuccess={handleLoginSuccess}
       />
       
       <Leaderboard

@@ -6,12 +6,14 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialMode?: 'login' | 'signup';
+  onLoginSuccess?: () => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ 
   isOpen, 
   onClose,
-  initialMode = 'login'
+  initialMode = 'login',
+  onLoginSuccess
 }) => {
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [email, setEmail] = useState('');
@@ -53,6 +55,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       } else {
         const { success, error } = await signIn(email, password);
         if (success) {
+          if (onLoginSuccess) {
+            console.log("Login successful, calling success callback");
+            onLoginSuccess();
+          }
           onClose();
         } else {
           setError(error.message || 'Invalid email or password.');
