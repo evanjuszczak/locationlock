@@ -53,137 +53,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (success) {
           setSuccessMessage('Account created successfully! Please check your email for verification.');
         } else {
-          // Check if this is a network/SSL error
-          const isNetworkProblem = 
-            error.message?.includes('network') || 
-            error.message?.includes('connect') ||
-            error.message?.includes('SSL') ||
-            error.message?.includes('certificate');
-          
-          setIsNetworkError(isNetworkProblem);
           setError(error.message || 'An error occurred during sign up.');
         }
       } else {
-        const { success, error } = await signIn(email, password);
-        if (success) {
-          if (onLoginSuccess) {
-            console.log("Login successful, calling success callback before closing modal");
-            try {
-              await Promise.resolve(onLoginSuccess());
-              console.log("Login success callback completed");
-            } catch (callbackError) {
-              console.error("Error in login success callback:", callbackError);
-            }
-          }
-          
-          onClose();
-        } else {
-          // Check if this is a network/SSL error
-          const isNetworkProblem = 
-            error.message?.includes('network') || 
-            error.message?.includes('connect') ||
-            error.message?.includes('SSL') ||
-            error.message?.includes('certificate');
-          
-          setIsNetworkError(isNetworkProblem);
-          setError(error.message || 'Invalid email or password.');
-        }
-      }
-    } catch (err) {
-      if (err instanceof Error) {
-        // Detect network or SSL errors
-        if (
-          err.message.includes('network') ||
-          err.message.includes('connect') ||
-          err.message.includes('SSL') ||
-          err.message.includes('certificate')
-        ) {
-          setIsNetworkError(true);
-          setError('Connection issue: Unable to connect securely to the authentication service. This may be due to network settings or a browser security configuration.');
-        } else {
-          setError(err.message || 'An unexpected error occurred.');
-        }
-      } else {
-        setError('An unexpected error occurred.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Function to retry login after clearing cached session
-  const handleRetry = async () => {
-    setError(null);
-    setIsNetworkError(false);
-    setLoading(true);
-    
-    try {
-      // Perform extensive cleanup of any cached sessions/tokens
-      
-      // 1. Clear localStorage auth data
-      if (typeof localStorage !== 'undefined') {
-        // Remove known Supabase tokens
-        localStorage.removeItem('supabase.auth.token');
-        localStorage.removeItem('locationlock-auth-storage');
-        
-        // Scan and remove any auth-related items
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && (
-            key.includes('supabase') || 
-            key.includes('auth') || 
-            key.includes('session')
-          )) {
-            localStorage.removeItem(key);
-          }
-        }
-      }
-      
-      // 2. Clear sessionStorage
-      if (typeof sessionStorage !== 'undefined') {
-        sessionStorage.removeItem('supabase.auth.token');
-        sessionStorage.removeItem('locationlock-auth-storage');
-      }
-      
-      // 3. Attempt to manually clear session cookies
-      document.cookie.split(';').forEach(cookie => {
-        const [name] = cookie.trim().split('=');
-        if (name.includes('auth') || name.includes('supabase')) {
-          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
-        }
-      });
-      
-      // 4. Additional attempt to clear potential bad session data via direct API call
-      try {
-        // Try with both fetch API and XHR as backup
-        try {
-          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/logout`, {
-            method: 'POST',
-            cache: 'no-cache',
-            headers: {
-              'Content-Type': 'application/json',
-              'Cache-Control': 'no-cache', 
-              'Pragma': 'no-cache'
-            },
-          });
-        } catch (e) {
-          console.warn('Error during manual fetch session clear, trying XHR as fallback');
-          // Fallback to XHR
-          const xhr = new XMLHttpRequest();
-          xhr.open('POST', `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/logout`, true);
-          xhr.setRequestHeader('Content-Type', 'application/json');
-          xhr.send();
-        }
-      } catch (e) {
-        // Ignore errors from this attempt
-        console.warn('Error during manual session clear, continuing with login attempt');
-      }
-      
-      // 5. Wait a moment to ensure cleanup is processed
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Now try the login again with fresh session
-      if (mode === 'login') {
         const { success, error } = await signIn(email, password);
         if (success) {
           if (onLoginSuccess) {
@@ -191,20 +63,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           }
           onClose();
         } else {
-          setError(`Login failed after retry: ${error.message || 'Unknown error'}. Please try using a different browser or network connection.`);
-        }
-      } else {
-        const { success, error } = await signUp(email, password, username);
-        if (success) {
-          setSuccessMessage('Account created successfully! Please check your email for verification.');
-        } else {
-          setError(`Registration failed after retry: ${error.message || 'Unknown error'}. Please try using a different browser or network connection.`);
+          setError(error.message || 'Invalid email or password.');
         }
       }
     } catch (err) {
-      console.error('Error during retry:', err);
-      setError('Connection issue persists. Please try using a different browser or network connection.');
-      setIsNetworkError(true);
+      if (err instanceof Error) {
+        setError(err.message || 'An unexpected error occurred.');
+      } else {
+        setError('An unexpected error occurred.');
+      }
     } finally {
       setLoading(false);
     }
@@ -308,38 +175,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-sm">
               <p>{error}</p>
-              
-              {/* Show retry button for network errors */}
-              {isNetworkError && (
-                <div className="mt-2">
-                  <p className="mb-2 text-xs">This appears to be an SSL certificate issue. Here are some things to try:</p>
-                  <ul className="list-disc text-xs ml-4 mb-2 space-y-1">
-                    <li>Try using a different browser (Firefox, Chrome, Safari, etc.)</li>
-                    <li>Clear your browser cache and cookies</li>
-                    <li>Check if you're using a VPN or proxy that might be interfering</li>
-                    <li>Make sure your device date/time settings are correct</li>
-                    <li>Turn off any browser extensions that might be affecting security</li>
-                  </ul>
-                  <div className="flex gap-2 mt-3">
-                    <button
-                      type="button"
-                      onClick={handleRetry}
-                      className="flex items-center justify-center gap-1 px-3 py-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded text-xs"
-                    >
-                      <RefreshCw size={12} className="animate-spin" />
-                      Retry
-                    </button>
-                    
-                    <button
-                      type="button"
-                      onClick={() => window.open('https://locationlock-l996k5zdg-evans-projects-6bc84f56.vercel.app', '_blank')}
-                      className="flex items-center justify-center gap-1 px-3 py-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded text-xs"
-                    >
-                      Open in New Window
-                    </button>
-                  </div>
-                </div>
-              )}
+              <button
+                type="button"
+                onClick={() => handleSubmit(new Event('click') as any)}
+                className="mt-2 text-xs underline hover:text-red-300"
+              >
+                Try again
+              </button>
             </div>
           )}
           
