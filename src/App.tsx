@@ -36,9 +36,6 @@ function App() {
     preserveState: boolean;
   } | null>(null);
 
-  // Game state persisting during login
-  const [preserveGameCompletion, setPreserveGameCompletion] = useState(false);
-
   // Only reset when there's a real user change after the initial mount,
   // not on the initial null -> null transition for anonymous users
   useEffect(() => {
@@ -122,10 +119,34 @@ function App() {
     }
   }, [gameState.isGameFinished, user, gameTracked, authLoading]);
 
+  // Handle successful login - used when logging in from game completion screen
+  const handleLoginSuccess = useCallback(async () => {
+    if (gameState.isGameFinished) {
+      console.log("Login successful, saving game state before auth changes");
+      
+      // Save current game state so we can restore it after login
+      setSavedGameState({
+        isGameFinished: true,
+        totalScore: gameState.totalScore,
+        preserveState: true
+      });
+      
+      // Return a promise to ensure we wait for state to be updated
+      return new Promise<void>(resolve => {
+        // Use a short timeout to ensure the state is updated before auth effect runs
+        setTimeout(() => {
+          console.log("Game state saved successfully");
+          resolve();
+        }, 100);
+      });
+    }
+  }, [gameState.isGameFinished, gameState.totalScore]);
+
   // Open auth modal with proper mode and context
   const openAuthModal = (mode: 'login' | 'signup' = 'login', preserveGame: boolean = false) => {
-    // Keep track if we're preserving the game state
+    // Save game state if opening from game completion screen
     if (preserveGame || gameState.isGameFinished) {
+      console.log("Opening auth modal from game completion screen");
       setSavedGameState({
         isGameFinished: true, 
         totalScore: gameState.totalScore,
@@ -137,24 +158,21 @@ function App() {
     setIsAuthModalOpen(true);
   };
 
-  // Handle successful login
-  const handleLoginSuccess = async () => {
-    // If we have a saved game state, make sure we don't reset it
-    if (savedGameState?.preserveState) {
-      setPreserveGameCompletion(true);
-      return;
-    }
-  };
-
   // Handle starting a game - can be done whether user is logged in or not
   const handleStartGame = () => {
+    // Set starting state to prevent multiple clicks
     setStartingGame(true);
     
+    // Force start the game regardless of auth state
+    console.log("Starting game, auth state:", authLoading ? "loading" : "ready");
+    
     try {
+      // Start the game regardless of auth state
       gameState.startGame();
     } catch (error) {
       console.error("Error starting game:", error);
     } finally {
+      // Clear starting state
       setStartingGame(false);
     }
   };

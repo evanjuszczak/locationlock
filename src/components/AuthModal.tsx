@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, User, Mail, Lock, RefreshCw } from 'lucide-react';
+import { X, User, Mail, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AuthModalProps {
@@ -20,7 +20,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [isNetworkError, setIsNetworkError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
@@ -31,7 +30,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setPassword('');
     setUsername('');
     setError(null);
-    setIsNetworkError(false);
     setSuccessMessage(null);
   };
 
@@ -43,7 +41,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setIsNetworkError(false);
     setSuccessMessage(null);
     setLoading(true);
 
@@ -59,19 +56,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         const { success, error } = await signIn(email, password);
         if (success) {
           if (onLoginSuccess) {
-            await Promise.resolve(onLoginSuccess());
+            console.log("Login successful, calling success callback before closing modal");
+            try {
+              await Promise.resolve(onLoginSuccess());
+              console.log("Login success callback completed");
+            } catch (callbackError) {
+              console.error("Error in login success callback:", callbackError);
+            }
           }
+          
           onClose();
         } else {
           setError(error.message || 'Invalid email or password.');
         }
       }
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message || 'An unexpected error occurred.');
-      } else {
-        setError('An unexpected error occurred.');
-      }
+      setError('An unexpected error occurred.');
     } finally {
       setLoading(false);
     }
@@ -174,14 +174,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-sm">
-              <p>{error}</p>
-              <button
-                type="button"
-                onClick={() => handleSubmit(new Event('click') as any)}
-                className="mt-2 text-xs underline hover:text-red-300"
-              >
-                Try again
-              </button>
+              {error}
             </div>
           )}
           
