@@ -3,6 +3,10 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { AuthProvider } from './contexts/AuthContext';
+import { testSupabaseConnection } from './lib/debug';
+
+// Run the Supabase connection test
+testSupabaseConnection();
 
 // Global error handling for fetch operations and SSL issues
 const originalFetch = window.fetch;

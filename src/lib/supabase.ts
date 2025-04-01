@@ -13,10 +13,37 @@ console.log('Initializing Supabase client with:', {
   keyLength: supabaseAnonKey ? supabaseAnonKey.length : 0
 });
 
+// Add global fetch error handler to detect certificate issues
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+  try {
+    return await originalFetch(...args);
+  } catch (err) {
+    if (err instanceof Error) {
+      // Look for SSL/certificate errors
+      if (err.message.includes('SSL') || 
+          err.message.includes('certificate') || 
+          err.message.includes('CERT_') ||
+          err.message.includes('ERR_CERT_')) {
+        console.error('SSL Certificate Error:', err.message);
+        console.error('This might be caused by an invalid Supabase certificate.');
+        console.error('Try creating a new Supabase project and updating credentials.');
+      }
+    }
+    throw err; // rethrow the error
+  }
+};
+
 let supabaseClient;
 
 try {
-  supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+  supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
+    }
+  });
   console.log('Supabase client initialized successfully');
 } catch (error) {
   console.error('Failed to initialize Supabase client:', error);
